@@ -31,9 +31,9 @@
  *	Debugging options:
  *	==================
  */
-//#define TF2ITEMS_DEBUG_HOOKING
-//#define TF2ITEMS_DEBUG_HOOKING_GNI
-//#define TF2ITEMS_DEBUG_ITEMS
+#define TF2ITEMS_DEBUG_HOOKING
+#define TF2ITEMS_DEBUG_HOOKING_GNI
+#define TF2ITEMS_DEBUG_ITEMS
 
 #define NO_FORCE_QUALITY
 
