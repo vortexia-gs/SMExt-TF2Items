@@ -4,6 +4,11 @@ name: Build Workflow
 on:
   workflow_dispatch:
     inputs:
+      make_release:
+        description: 'Create release'
+        required: true
+        type: boolean
+        default: false
       build_name:
         description: 'Release name'
         required: true
@@ -12,6 +17,7 @@ on:
 
 jobs:
   create_release:
+    if: ${{ inputs.make_release == true }}
     name: Create release
     runs-on: ubuntu-latest
     outputs:
@@ -23,14 +29,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: r${{ github.run_number }}-${{ github.ref_name }}
+          tag_name: r${{ inputs.build_name }}-${{ github.ref_name }}
           release_name: ${{ inputs.build_name }}
           draft: false
           prerelease: true
 
   build:
     name: Build for ${{ matrix.os_short }} using sm-${{ matrix.sm_branch }}
-    needs: create_release
     runs-on: ${{ matrix.os }}
 
     strategy:
