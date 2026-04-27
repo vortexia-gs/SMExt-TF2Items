@@ -34,6 +34,7 @@
 #define TF2ITEMS_DEBUG_HOOKING
 #define TF2ITEMS_DEBUG_HOOKING_GNI
 #define TF2ITEMS_DEBUG_ITEMS
+#define TF2ITEMS_DEBUG_FORWARDS
 
 #define NO_FORCE_QUALITY
 
@@ -191,15 +192,26 @@ CBaseEntity *Hook_GiveNamedItem(char const *szClassname, int iSubType, CEconItem
 	g_pForwardGiveItem->PushCell(cscript->m_iItemDefinitionIndex);
 	g_pForwardGiveItem->PushCellByRef(&cellOverrideHandle);
 	g_pForwardGiveItem->Execute(&cellResults);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Executed g_pForwardGiveItem");
+#endif
 
 	// Determine what to do
 	switch(cellResults) {
 		case Pl_Continue:
 			{
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+					g_pSM->LogMessage(myself, ">>> Pl_Continue");
+					g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 				RETURN_META_VALUE(MRES_IGNORED, NULL);
 			}
 		case Pl_Changed:
 			{
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+					g_pSM->LogMessage(myself, ">>> Pl_Changed");
+					g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 				TScriptedItemOverride *pScriptedItemOverride = GetScriptedItemOverrideFromHandle(cellOverrideHandle);
 				if (pScriptedItemOverride == NULL) {
 					RETURN_META_VALUE(MRES_IGNORED, NULL);
@@ -256,8 +268,18 @@ CBaseEntity *Hook_GiveNamedItem(char const *szClassname, int iSubType, CEconItem
 				RETURN_META_VALUE_MNEWPARAMS(MRES_HANDLED, NULL, MHook_GiveNamedItem, (finalitem, iSubType, &newitem, ((pScriptedItemOverride->m_bFlags & FORCE_GENERATION) == FORCE_GENERATION)));
 			}
 		case Pl_Handled:
+			{
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+					g_pSM->LogMessage(myself, ">>> Pl_Handled");
+					g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
+			}
 		case Pl_Stop:
 			{
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+					g_pSM->LogMessage(myself, ">>> Pl_Stop");
+					g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 				RETURN_META_VALUE(MRES_SUPERCEDE, NULL);
 			}
 	}
@@ -290,6 +312,10 @@ CBaseEntity *Hook_GiveNamedItem_Post(char const *szClassname, int iSubType, CEco
 	g_pForwardGiveItem_Post->PushCell(cscript->m_iEntityQuality);
 	g_pForwardGiveItem_Post->PushCell(iEntityIndex);
 	g_pForwardGiveItem_Post->Execute(NULL);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Executed g_pForwardGiveItem_Post");
+	g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 	
 	RETURN_META_VALUE(MRES_IGNORED, pItemEntiy);
 }
@@ -312,10 +338,17 @@ DETOUR_DECL_MEMBER3(CTFPlayer_GetLoadoutItem, CEconItemView*, int, iClass, int, 
 	cell_t overrideHandle{};
 	g_pForwardGetLoadoutItem->PushCellByRef(&overrideHandle);
 	g_pForwardGetLoadoutItem->Execute(&forwardResult);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Executed g_pForwardGetLoadoutItem");
+#endif
 	
 	switch (forwardResult) {
 		case Pl_Changed:
 			{
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+					g_pSM->LogMessage(myself, ">>> Pl_Changed");
+					g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 				TScriptedItemOverride *pScriptedItemOverride = GetScriptedItemOverrideFromHandle(overrideHandle);
 				if (pScriptedItemOverride == NULL) {
 					return result;
@@ -370,6 +403,12 @@ DETOUR_DECL_MEMBER3(CTFPlayer_GetLoadoutItem, CEconItemView*, int, iClass, int, 
 
 				return g_LoadoutCache[entry].get();
 			}
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+		default:
+			{
+				g_pSM->LogMessage(myself, "---------------------------------------");
+			}
+#endif
 	}
 	return result;
 }
@@ -607,6 +646,12 @@ bool TF2Items::SDK_OnLoad(char *error, size_t maxlen, bool late) {
 	g_pForwardGiveItem = g_pForwards->CreateForward("TF2Items_OnGiveNamedItem", ET_Hook, 4, NULL, Param_Cell, Param_String, Param_Cell, Param_CellByRef);
 	g_pForwardGiveItem_Post = g_pForwards->CreateForward("TF2Items_OnGiveNamedItem_Post", ET_Ignore, 6, NULL, Param_Cell, Param_String, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 	g_pForwardGetLoadoutItem = g_pForwards->CreateForward("TF2Items_OnGetLoadoutItem", ET_Hook, 4, NULL, Param_Cell, Param_Cell, Param_Cell, Param_CellByRef);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Created forwards:");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGiveItem");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGiveItem_Post");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGetLoadoutItem");
+#endif
 
 	g_pDetourGetLoadoutItem->EnableDetour();
 
@@ -641,6 +686,12 @@ void TF2Items::SDK_OnUnload()
 	g_pForwards->ReleaseForward(g_pForwardGiveItem);
 	g_pForwards->ReleaseForward(g_pForwardGiveItem_Post);
 	g_pForwards->ReleaseForward(g_pForwardGetLoadoutItem);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Released forwards:");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGiveItem");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGiveItem_Post");
+	g_pSM->LogMessage(myself, ">>> g_pForwardGetLoadoutItem");
+#endif
 	
 	g_pDetourGetLoadoutItem->DisableDetour();
 }
@@ -790,6 +841,10 @@ static cell_t TF2Items_GiveNamedItem(IPluginContext *pContext, const cell_t *par
 	g_pForwardGiveItem_Post->PushCell(hScriptCreatedItem.m_iEntityQuality);
 	g_pForwardGiveItem_Post->PushCell(entIndex);
 	g_pForwardGiveItem_Post->Execute(NULL);
+#ifdef TF2ITEMS_DEBUG_FORWARDS
+	g_pSM->LogMessage(myself, "Executed g_pForwardGiveItem_Post");
+	g_pSM->LogMessage(myself, "---------------------------------------");
+#endif
 
 	return entIndex;
 }
